@@ -44,8 +44,7 @@ function stopLobeChatDockerImage() {
 let mainWindow
 
 function createWindow() {
-  const preloadPath = `${dirname(fileURLToPath(import.meta.url))}/preload.js`
-  console.log("Preload path:", preloadPath)
+  const preload = `${dirname(fileURLToPath(import.meta.url))}/preload.js`
 
   mainWindow = new BrowserWindow({
     width: 800,
@@ -53,7 +52,7 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: false, // This improves security since you're loading an external page.
       contextIsolation: true, // Enable context isolation for additional security.
-      preload: preloadPath, // Make sure the path is accurate
+      preload,
     },
   })
 
@@ -68,6 +67,7 @@ app.on("ready", () => {
   createWindow()
 
   // Register the global shortcuts
+  console.log("Registering shortcuts...")
   registerShortcut(
     SHORTCUT_FOCUS_AND_TURN_ON_MIC,
     (win) => win.webContents.send("focus-input-and-turn-on-mic"),
@@ -78,13 +78,10 @@ app.on("ready", () => {
     (win) => win.webContents.send("focus-input-and-turn-off-mic"),
     mainWindow
   )
+  console.log("")
 })
 
-app.on("window-all-closed", () => {
-  if (process.platform !== "darwin") {
-    app.quit()
-  }
-})
+app.on("window-all-closed", app.quit)
 
 app.on("activate", () => {
   if (BrowserWindow.getAllWindows().length === 0) {
@@ -97,4 +94,5 @@ app.on("will-quit", () => {
   globalShortcut.unregisterAll()
   ipcMain.removeAllListeners()
   stopLobeChatDockerImage()
+  console.log("Finished cleanup. Quitting.")
 })
