@@ -10,6 +10,7 @@ import { globalShortcut } from "electron"
 export const registerShortcut = (shortcutCombination, callback, mainWindow) => {
   const ret = globalShortcut.register(shortcutCombination, () => {
     console.log(`${shortcutCombination} is pressed`)
+
     if (!mainWindow) {
       console.error("Main window is not available.")
       return
@@ -17,12 +18,8 @@ export const registerShortcut = (shortcutCombination, callback, mainWindow) => {
 
     if (!mainWindow.isFocused()) mainWindow.focus() // Attempt to focus the window
 
-    setTimeout(() => {
-      if (mainWindow.isFocused()) {
-        console.log("Main window is focused. calling the callback...")
-        callback(mainWindow)
-      } else console.error("Main window is not focused or available.")
-    }, 500)
+    console.log("calling the callback...")
+    callback(mainWindow)
   })
 
   if (!ret) console.error(`Registration failed for ${shortcutCombination}`)

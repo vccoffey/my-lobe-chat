@@ -64,7 +64,7 @@ function createWindow() {
 }
 
 app.on("ready", () => {
-  // startLobeChatDockerImage()
+  startLobeChatDockerImage()
   createWindow()
 
   // Register the global shortcuts
@@ -96,4 +96,5 @@ app.on("will-quit", () => {
   // Unregister all shortcuts.
   globalShortcut.unregisterAll()
   ipcMain.removeAllListeners()
+  stopLobeChatDockerImage()
 })
