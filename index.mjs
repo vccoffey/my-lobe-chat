@@ -2,6 +2,7 @@ import { app, globalShortcut, BrowserWindow, ipcMain } from "electron"
 import { exec } from "child_process"
 import { fileURLToPath } from "url"
 import { dirname } from "path"
+import http from "http"
 import { registerShortcut } from "./shortcutManager.mjs"
 
 const SHORTCUT_FOCUS_AND_TURN_OFF_MIC = "Command+Option+A"
@@ -41,12 +42,10 @@ function stopLobeChatDockerImage() {
   )
 }
 
-let mainWindow
-
 function createWindow() {
   const preload = `${dirname(fileURLToPath(import.meta.url))}/preload.js`
 
-  mainWindow = new BrowserWindow({
+  const mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
     webPreferences: {
@@ -56,17 +55,54 @@ function createWindow() {
     },
   })
 
-  mainWindow.loadURL("http://localhost:3210/chat")
+  mainWindow
+    .loadURL("http://localhost:3210/chat")
+    .then(() => onWindowReady(mainWindow))
+
+  mainWindow.on("closed", () => {
+    mainWindow = null // Dereference the window object
+  })
 
   // Open the DevTools optionally:
   // mainWindow.webContents.openDevTools()
 }
 
-app.on("ready", () => {
-  startLobeChatDockerImage()
-  createWindow()
+function checkServerReady(retryCount = 0, maxRetries = 30) {
+  const options = {
+    host: "localhost",
+    port: 3210,
+    path: "/", // Using the base URL
+    timeout: 2000,
+  }
 
-  // Register the global shortcuts
+  if (retryCount >= maxRetries) {
+    console.error("Server did not become ready in time. Max retries exceeded.")
+    return
+  }
+
+  const request = http.request(options, (res) => {
+    if (res.statusCode === 200) {
+      console.log("Server is ready.")
+      createWindow()
+    } else {
+      console.log(
+        `Server not ready, status code: ${res.statusCode}, retrying...`
+      )
+      setTimeout(() => checkServerReady(retryCount + 1, maxRetries), 2000)
+    }
+  })
+
+  request.on("error", (err) => {
+    console.log(
+      `Error checking server status, retrying... Error: ${err.message}`
+    )
+    setTimeout(() => checkServerReady(retryCount + 1, maxRetries), 2000)
+  })
+
+  request.end()
+}
+
+function onWindowReady(mainWindow) {
   console.log("Registering shortcuts...")
   registerShortcut(
     SHORTCUT_FOCUS_AND_TURN_ON_MIC,
@@ -78,7 +114,12 @@ app.on("ready", () => {
     (win) => win.webContents.send("focus-input-and-turn-off-mic"),
     mainWindow
   )
-  console.log("")
+  console.log("Shortcuts registered.")
+}
+
+app.on("ready", () => {
+  startLobeChatDockerImage()
+  checkServerReady()
 })
 
 app.on("window-all-closed", app.quit)
