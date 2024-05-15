@@ -59,9 +59,7 @@ function createWindow() {
     .loadURL("http://localhost:3210/chat")
     .then(() => onWindowReady(mainWindow))
 
-  mainWindow.on("closed", () => {
-    mainWindow = null // Dereference the window object
-  })
+  mainWindow.on("closed", () => {})
 
   // Open the DevTools optionally:
   // mainWindow.webContents.openDevTools()
